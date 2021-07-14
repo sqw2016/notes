@@ -502,3 +502,248 @@ function App() {
 }
 ```
 
+
+
+# 自定义HOOK
+
+自定义 hook 是为了在组件之间实现逻辑共享
+
+自定义 hook 是标准的封装和共享逻辑的方式
+
+自定义 hook 是一个以 use 开头的函数
+
+自定义 hook 是逻辑与内置 hook 的组合
+
+```jsx
+// 自定义hook，公共逻辑提取
+const useInput = initialValue => {
+  const [value, setValue] = useState(initialValue)
+  return {
+    value,
+    onChange: e => setValue(e.target.value)
+  }
+} 
+
+function App() {
+  const textInput = useInput('')
+  const passwordInput = useInput('')
+  const numberInput = useInput(0)
+
+  return (
+    <div className="App">
+      <header className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+        <p>
+          Edit <code>src/App.js</code> and save to reload.
+        </p>
+        <div>
+          <input type="text" {...textInput} />
+          <input type="password" {...passwordInput} />
+          <input type="number" {...numberInput} />
+        </div>
+      </header>
+    </div>
+  );
+}
+```
+
+
+
+# 路由钩子函数
+
+路由对应的渲染视图的 props 会注入 history、location 以及 match 属性，为了方便获取这些属性，react-router-dom 提供了一些钩子函数来获取这些属性。
+
+![image-20210712110457158](C:\Users\lenovo\AppData\Roaming\Typora\typora-user-images\image-20210712110457158.png)
+
+```jsx
+<div>
+  <Link to="/home">Home</Link>
+  <Link to="/about/张三">About</Link>
+</div>
+<div>
+  <Route path="/home" component={Home} />
+  <Route path="/about/:name" component={About} />
+</div>
+```
+
+
+
+```jsx
+import { useHistory, useLocation, useParams, useRouteMatch } from 'react-router-dom';
+
+export default function About(props) {
+  console.log(useHistory());
+  console.log(useLocation());
+  console.log(useRouteMatch());
+  console.log(useParams());
+  return (
+    <div>
+      About
+    </div>
+ )
+}
+```
+
+![image-20210712110758911](C:\Users\lenovo\AppData\Roaming\Typora\typora-user-images\image-20210712110758911.png)
+
+
+
+# useState 实现
+
+## 1. 基础 useState 实现
+
+实现 useState 接收初始值，并返回状态及修改状态的方法。状态改变时更新视图
+
+```js
+import ReactDOM from 'react-dom'
+import App from '../App'
+let state
+export default function useState(initialState) {
+  state = state ? state : initialState
+  function setState(newState) {
+    state = newState
+    // 更新视图
+    ReactDOM.render(<App />, document.getElementById('root'))
+  }
+  return [
+    state,
+    setState
+  ]
+}
+```
+
+## 2. 多次调用 useState，返回不同的状态
+
+上面的实现多次调用 useState 时，会返回同一个状态。实际的情况是 **useState 每次调用会生成一组新的状态以及状态修改方法**。
+
+使用数组来缓存 state 和 setState 方法，setState 修改状态时，会利用下标来查找对应的状态，所以需要利用闭包缓存当前下标，不然 setState 运行时下标的值会固定为最后一个下标的值。
+
+重新渲染时，由于需要重新执行 useState 方法，所以下标要从 0 开始。
+
+```js
+import ReactDOM from 'react-dom'
+import App from '../App'
+
+function render() {
+  // 重新渲染时，要重新执行 useState，index 要从0开始
+  index = 0
+  // 更新视图
+  ReactDOM.render(<App />, document.getElementById('root'))
+}
+
+// 利用闭包缓存 index
+function renderSetter(index) {
+  return function (newState) {
+    states[index] = newState
+    render()
+  }
+}
+
+const states = []
+const setStates = []
+let index = 0
+export default function useState(initialState) {
+  // 重新 render 时，避免 state 重复设置为初始值
+  if (!states[index]) states[index] = initialState
+  if (!setStates[index]) setStates[index] = renderSetter(index)
+  const r = [
+    states[index],
+    setStates[index]
+  ]
+  index++
+  return r
+}
+```
+
+
+
+## 3. 精确重新渲染
+
+useState 更新状态时，只渲染使用状态的组件。
+
+
+
+# useEffect 实现
+
+useEffect 接收一个方法以及可选参数依赖数组，当依赖数组中的项发生改变时，执行方法
+
+1. 没有传入依赖项数组时，初始化渲染时和重新渲染时都会执行传入的方法
+2. 传入了一个空的依赖项数组时，只有初始化渲染时执行传入的方法
+3. 传入了非空的依赖项数组时，当初始化渲染以及依赖项数组中的值发生改变时，都会执行传入的方法
+
+## 1. 基本功能实现
+
+ 校验参数，第一个参数必须是函数，如果传入了第二个参数，第二个参数必须是数组
+
+如果没有传入第二个参数，每次都会执行方法
+
+如果传入了第二个参数，则需要和前一次的依赖数组对比，如果发生变化，则要执行参数
+
+```js
+let prevDeps = []
+export function useEffect(func, deps) {
+  if (Object.prototype.toString.call(func) !== '[object Function]') throw new Error('useEffect第一个参数必须是函数')
+  if (deps === undefined) {
+    func()
+  } else {
+    if (Object.prototype.toString.call(deps) !== '[object Array]') throw new Error('useEffect第而然个参数必须是数组')
+    // 对比依赖是否发生变化，如果变化，则执行 func
+    const noChanged = deps.every((dep, i) => dep === prevDeps[i])
+    // 依赖向发生变化，执行func函数
+    if (!noChanged) {
+      func()
+    }
+    prevDeps = deps
+  }
+}
+```
+
+
+
+## 2. 多次执行 useEffect 
+
+多次执行 useEffect 需要使用一个下标记录上一次调用 useEffect 传入的依赖项数组。同时如果重新渲染时，需要重置下标。
+
+```js
+let prevDeps = []
+export function useEffect(func, deps) {
+  if (Object.prototype.toString.call(func) !== '[object Function]') throw new Error('useEffect第一个参数必须是函数')
+  if (deps === undefined) {
+    func()
+  } else {
+    if (Object.prototype.toString.call(deps) !== '[object Array]') throw new Error('useEffect第而然个参数必须是数组')
+    // 获取上一次的依赖
+    const prevDep = prevDeps[effectIndex]
+    // 对比依赖是否发生变化，如果变化，则执行 func
+    const noChanged = prevDep ? deps.every((dep, i) => dep === prevDep[i]) : false
+    // 依赖向发生变化，执行func函数
+    if (!noChanged) {
+      func()
+    }
+    prevDeps[effectIndex] = deps
+    effectIndex++
+  }
+}
+```
+
+下标的重置要放在 useState 的 render 函数中。
+
+
+
+# useReducer 实现
+
+useReducer 的实现可以基于上面的 useState 来实现。只是修改状态是通过 dispatch 方法来修改的。
+
+```js
+export function useReducer(reducer, initialState) {
+  const [state, setState] = useState(initialState)
+  function dispatch(action) {
+    // 生成新的状态
+    const newState = reducer(state, action)
+    // 更新状态
+    setState(newState)
+  }
+  return [state, dispatch]
+}
+```
+
