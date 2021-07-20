@@ -18,7 +18,7 @@ Mobx通常与react一起使用，但是 Angular 和 Vue 中同样可以使用 Mo
 
 ## action
 
-允许修改状态的方法，在严格模式下至于 action 方法才能修改状态
+允许修改状态的方法，在严格模式下只有 action 方法才能修改状态
 
 ## computed
 

@@ -233,3 +233,77 @@ breakpoints 对象定义响应式断点，表示页面宽度的一组值。可�
 
 第一个值是默认值，即没有匹配到 breakpoints 时的值。
 
+
+
+# 9. 自定义组件
+
+## 1. 定义组件的 styles
+
+```jsx
+const MyButton = {
+  baseStyle: {
+    borderRadius: 'lg',
+  },
+  sizes: {
+    sm: {
+      px: '3',
+      py: '1',
+      fontSize: '12px'
+    },
+    md: {
+      px: '5',
+      py: '2',
+      fontSize: '14px'
+    }
+  },
+  variants: {
+    danger: {
+      bgColor: 'red.400',
+      color: 'white'
+    },
+    primary: {
+      bgColor: 'blue.400',
+      color: 'white'
+    },
+  },
+  defaultProps: {
+    size: 'md',
+    variant: 'danger'
+  }
+}
+```
+
+## 2. 在 theme 中注册组件
+
+```jsx
+const theme = extendTheme({
+  config: {
+    useSystemColorMode: true,
+    initialColorMode: 'dark',
+  },
+  // 注册组件
+  components: {
+    MyButton
+  }
+})
+```
+
+## 3. 定义组件
+
+```jsx
+const MyButton = function (props) {
+
+  const { variant, size, children, ...rest } = props
+  // 使用注册的组件生成组件样式
+  const styles = useStyleConfig('MyButton', {variant, size})
+	// __css 具有更低的优先级，可以让用户传入的参数覆盖组件定义的参数
+  return <Button __css={styles} {...rest}>{ children }</Button>
+}
+```
+
+## 4. 使用组件
+
+```jsx
+<MyButton size="sm" variant="primary">保持浅色模式</MyButton>
+```
+
