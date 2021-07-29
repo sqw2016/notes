@@ -308,3 +308,41 @@ props 和 state 中的数据应该保持结构一致，否则会导致输出不�
 
 使用第三方包时，不想引入包中所有代码，只想要使用哪些引入哪些。可以使用插件对依赖项进行优化。
 
+## 1. create-react-app 配置覆盖
+
+react-app-rewired 覆盖 create-react-app 默认配置
+
+customize-cra 导出一些辅助方法，可以让覆盖默认配置的写法更简单
+
+安装上述依赖，在根目录下创建 config-overrides.js 文件，导出下列配置：
+
+```JS
+const { override, useBabelRc } = require('customize-cra')
+
+module.exports = override(useBabelRc())
+```
+
+之后就可以通过配置 .babelrc 修改 babel 配置来覆盖默认配置
+
+
+
+## 2. 通过插件来精简代码
+
+babel-plugin-lodash 对 lodash 进行精简，按需加载需要的代码
+
+在 .babelrc 中配置插件
+
+```json
+{
+  "plugins": ["lodash"]
+}
+```
+
+
+
+# 16. 为列表添加key
+
+列表没有添加 key，diff 时会依次对标新旧列表中的每个元素，如果发现不同，则会更新元素
+
+如果添加了key，则diff 对比时会根据 key 去对比
+
