@@ -61,7 +61,7 @@ emotion 是一个使用 js 编写 css 的库
 
 ## 2. 配置 babel 支持 css 属性
 
-emotion 通过 css 属性来设置样式规则，但 babel 默认将 jsx 语法转换成 React.createElement 方法的调用，React.createElement 方法无法正确识别 css 属性。 所以需要将 jsx 语法转换成 @emotion/core 提供的 jsx 语法的调用。
+emotion 通过 css 属性来设置样式规则，但 babel 默认将 jsx 语法转换成 React.createElement 方法的调用，React.createElement 方法无法正确识别 css 属性。 所以需要将 jsx 语法转换成 @emotion/react 提供的 jsx 语法的调用。
 
 |            | input          | output                                   |
 | ---------- | -------------- | ---------------------------------------- |
